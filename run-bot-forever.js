@@ -1,9 +1,15 @@
 // Keeps the Telegram bot alive despite the dashboard's 55-min VM auto-stop:
 // create VM -> deploy+verify bot -> poll dashboard status -> once it's no longer
 // "started", destroy it and create a fresh one. Loops forever.
+const http = require('http');
 const { chromium } = require('playwright');
 const { createVM, getStatus, destroyVM, getDesktopUrl } = require('./vm-lib');
 const { deployBot } = require('./deploy-bot');
+
+// Render's free plan only keeps "Web Services" alive, and only while they receive
+// HTTP traffic (sleeps after 15min idle) - this just gives an external cron/pinger
+// something to hit to keep the process alive. No-op locally (nothing calls it).
+http.createServer((_req, res) => res.end('ok')).listen(process.env.PORT || 3000);
 
 const MAX_CREATE_ATTEMPTS = 3;
 const POLL_INTERVAL_MS = 10 * 1000;
